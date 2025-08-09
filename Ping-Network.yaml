@@ -1,0 +1,18 @@
+PRINT:
+    Enabled: True
+
+FILE:
+    Enabled: True
+
+SMTP:
+  Enabled: True
+  # # smtp info
+  Server: smtp.home
+  Port: 587
+  TLS: True
+  CA: False
+  Login: ""
+  Password: ""
+  MailDomain: engrie.home  
+  To: marc@engrie.home
+ 
