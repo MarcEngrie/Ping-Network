@@ -26,7 +26,8 @@ Ping-Network.exe -P "PingNetwork_192.168.1.lst" -N "192.168.1" -M "255.255.255.0
 ~~~
 
 the tool will do a full scan of the network as well as a specific scan of all devices list in PingNetwork_192.168.1.lst. 
-Any deivce not responding will be reported. Any device alive and not in the list will also be reported. 
+Any deivce not responding will be reported. Any device alive and not in the list will also be reported.
+Should a device be occasionally be online/alive, then you can control the reporting by changing the status-flag in the .lst file from A (always) to O (occasionally)
 
 Reporting can be on the screen (PRINT), in a file (FILE) or a mail (SMTP), controlled in the corresponding YAML file
 ~~~
