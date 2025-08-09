@@ -13,7 +13,7 @@ Ping-Network.exe -N "192.168.1" -M "255.255.255.0"
 This will scan the whole network 192.168.1.0/24 from 192.168.1.1 to 192.168.1.254. All devices that reply to a ping will be listed in a file called PingNetwork_192.168.1.txt.
 If they have a DNS-record in the DNS server used, a hostname will be added.
 A second file PingNetwork_192.168.1.lan is created listing all alive IP's with their hostname, if available, and their MAC-address.
-In the file you find a seond list with all IP's (alive and not responding). So you can see what IPs are still available.  
+In the file you find a second list with all IP's (alive and not responding). So you can see what IPs are still available.  
 
 You can edit the file to add or correct what is needed. Then, rename it to PingNetwork_192.168.1.lst.
 When you run the tool like this
