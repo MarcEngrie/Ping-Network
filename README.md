@@ -121,3 +121,5 @@ IP inventory
 192.168.001.066 - octopi                                   !!!! NOT ALIVE !!!!
 ~~~
 
+<img width="792" height="349" alt="image" src="https://github.com/user-attachments/assets/b3cd8537-e990-4983-894a-dc10916b55bb" />
+
