@@ -1,6 +1,6 @@
 # Ping-Network
 
-This is a Python script (also converted to an Windows executable) that allows you to scan your network(s) and find availablr devices.
+This is a Python script (also converted to an Windows executable) that allows you to scan your network(s) and find available devices.
 Initially, you can run it like this eg:
 ~~~
 python.exe Ping-Network.py -N "192.168.1" -M "255.255.255.0"
