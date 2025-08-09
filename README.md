@@ -29,7 +29,7 @@ the tool will do a full scan of the network as well as a specific scan of all de
 Any deivce not responding will be reported. Any device alive and not in the list will also be reported.
 Should a device be occasionally be online/alive, then you can control the reporting by changing the status-flag in the .lst file from A (always) to O (occasionally)
 
-Reporting can be on the screen (PRINT), in a file (FILE) or a mail (SMTP), controlled in the corresponding YAML file
+Reporting can be on the screen (PRINT), in a file .err (FILE) or a mail (SMTP), controlled in the corresponding YAML file
 ~~~
 PRINT:
     Enabled: True
