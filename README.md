@@ -50,7 +50,7 @@ SMTP:
   To: marc@engrie.home
 ~~~
 
-Sample of .lst file
+Sample of .lst / .txt file
 ~~~
 # Format: hostname;IP-address;Status 
 # Status can be A = Active or O = occasionally
