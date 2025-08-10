@@ -1,5 +1,15 @@
 # Ping-Network
 
+# 2025-08-10: 
+uploaded version: 3.00 which includes now also a ARP scanning if scanner is wirhin the same network segement that is being scanned.
+If you use the Python version, you need to install scapy using 
+~~~
+pip install scapy
+~~~
+
+To use version 3.00 or higher you need Npcap 1.83 or higher to be install om your Windows computer. You can download and install it from here https://npcap.com/#download
+
+# Initial version 2.00
 This is a Python script (also converted to an Windows executable) that allows you to scan your network(s) and find available devices.
 Initially, you can run it like this eg:
 ~~~
