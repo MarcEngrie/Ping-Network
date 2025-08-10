@@ -10,7 +10,7 @@ pip install scapy
 To use version 3.00 or higher you need Npcap 1.83 or higher to be install on your Windows computer.
 You can download and install it from here https://npcap.com/#download
 
-**Important Note:** as Ping-Network.exe is about 45 MB, I can not upload it to GitHub. So contact me if you want a copy or you can make it yourself if you have Python installed
+**Important Note:** as Ping-Network.exe (Veersion 3.00 or higher) is about 45 MB, I can not upload it to GitHub. So contact me if you want a copy or you can make it yourself if you have Python installed
 
 ~~~
 pip install pyinstaller
