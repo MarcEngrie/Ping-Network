@@ -33,7 +33,7 @@ from scapy.all            import srp, Ether, ARP
 
 #----------------------------------------------------------------------------------
 
-VERSION        = "3.04"
+VERSION        = "3.05"
 Debug          = False
 
 COMPUTERNAME   = os.getenv('COMPUTERNAME')
@@ -429,16 +429,18 @@ def doping(Host, Count, Size, Timeout, Debug):
         host = host.replace(".home","")
         host = host.replace(".local","")
         if IP_NET in ip:
-            try:
-                DNS_ip = socket.gethostbyname(host)
-            except:
-                DNS_ip = ""
+            # try:
+                # DNS_ip = socket.gethostbyname(host)
+            # except:
+                # DNS_ip = ""
 
             try:
-                DNS_host, _, _ = socket.gethostbyaddr(ip)
+                DNS_host, _, DNS_ips = socket.gethostbyaddr(ip)
                 DNS_host = DNS_host.replace(".home","")
+                DNS_ip   = DNS_ips[0]
             except:
-                DNS_host = ""
+                DNS_host = "<not in DNS>"
+                DNS_ip   = "<not in DNS>"
     else:
         host = Host.replace(".home","")
         try:
@@ -447,11 +449,11 @@ def doping(Host, Count, Size, Timeout, Debug):
             DNS_ip = ""
 
     if Debug:
-        print(Host, host, DNS_host, ip, DNS_ip)
+        print(f"Host: {Host} - host: {host} - DNS_host: {DNS_host} - IP: {ip} - DNS_ip: {DNS_ip}")
 
     if IP_NET in ip and host_net:
         if host.upper() != DNS_host.upper():
-            msg = "ERROR: " + host + " not the same as DNS " + DNS_host
+            msg = "      ERROR: " + host + " not the same as DNS " + DNS_host
             if smtp_enabled:
                 sendmail(From, To,  msg, "")
             if print_enabled:
@@ -463,7 +465,7 @@ def doping(Host, Count, Size, Timeout, Debug):
         if DNS_ip in ip_split:
             pass
         else:
-            msg = "ERROR: " + ip + " not the same as DNS " + DNS_ip
+            msg = "      ERROR: " + ip + " not the same as DNS " + DNS_ip
             if smtp_enabled:
                 sendmail(From, To,  msg, "")
             if print_enabled:
