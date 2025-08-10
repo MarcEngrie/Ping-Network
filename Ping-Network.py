@@ -4,6 +4,8 @@
 #
 #  pyinstaller --onefile "Ping-Network.py" --exclude-module pkg_resources
 #
+#  install https://npcap.com/#download
+#
 ###################################################################################
 
 ###################################################################################
@@ -31,14 +33,15 @@ from scapy.all            import srp, Ether, ARP
 
 #----------------------------------------------------------------------------------
 
-VERSION        = "3.00"
+VERSION        = "3.01"
 Debug          = False
 
 COMPUTERNAME   = os.getenv('COMPUTERNAME')
 
 strScriptName  = os.path.basename(sys.argv[0])
+strScriptPath  = os.path.dirname(os.path.realpath(sys.argv[0]))
 strScriptBase  = os.path.splitext(strScriptName)[0]
-yamlFilename   = strScriptBase + '.yaml'
+yamlFilename   = strScriptPath + "/" + strScriptBase + '.yaml'
 
 #----------------------------------------------------------------------------------
 
@@ -290,7 +293,7 @@ def getargs(argv):
             loadPingDict()
         elif opt in ("-N"):
             IP_NET = arg
-            outputFile = strScriptBase + f"_{IP_NET}.lan"
+            outputFile = strScriptPath + "/" + strScriptBase + f"_{IP_NET}.lan"
         elif opt in ("-M"):
             IP_MASK = arg
 
