@@ -1,6 +1,6 @@
 # Ping-Network
 
-# 2025-08-10: uploaded version: 3.00 
+# 2025-08-10: uploaded version: 3.01 
 This version includes now also a ARP scanning if scanner is within the same network segement that is being scanned.
 If you use the Python version, you need to install scapy using 
 ~~~
