@@ -33,7 +33,7 @@ from scapy.all            import srp, Ether, ARP
 
 #----------------------------------------------------------------------------------
 
-VERSION        = "3.01"
+VERSION        = "3.02"
 Debug          = False
 
 COMPUTERNAME   = os.getenv('COMPUTERNAME')
@@ -290,6 +290,7 @@ def getargs(argv):
             MailFrom = arg
         elif opt in ("-P"):
             PingList = arg
+            PingList = strScriptPath + "/" + PingList
             loadPingDict()
         elif opt in ("-N"):
             IP_NET = arg
@@ -623,7 +624,7 @@ def log2lan(net):
     global PingDict, outputFile
     global host_ip, host_mac
 
-    with open(outputFile, 'a') as f:
+    with open(outputFile, 'w') as f:
         l = len(ipalive)
         f.write(f"###################\n")
         f.write(f"### Net: {net}\n")
