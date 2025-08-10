@@ -33,7 +33,7 @@ from scapy.all            import srp, Ether, ARP
 
 #----------------------------------------------------------------------------------
 
-VERSION        = "3.02"
+VERSION        = "3.04"
 Debug          = False
 
 COMPUTERNAME   = os.getenv('COMPUTERNAME')
@@ -41,7 +41,7 @@ COMPUTERNAME   = os.getenv('COMPUTERNAME')
 strScriptName  = os.path.basename(sys.argv[0])
 strScriptPath  = os.path.dirname(os.path.realpath(sys.argv[0]))
 strScriptBase  = os.path.splitext(strScriptName)[0]
-yamlFilename   = strScriptPath + "/" + strScriptBase + '.yaml'
+yamlFilename   = os.path.join(strScriptPath, strScriptBase + '.yaml')
 
 #----------------------------------------------------------------------------------
 
@@ -290,11 +290,11 @@ def getargs(argv):
             MailFrom = arg
         elif opt in ("-P"):
             PingList = arg
-            PingList = strScriptPath + "/" + PingList
+            PingList = os.path.join(strScriptPath, PingList)
             loadPingDict()
         elif opt in ("-N"):
             IP_NET = arg
-            outputFile = strScriptPath + "/" + strScriptBase + f"_{IP_NET}.lan"
+            outputFile = os.path.join(strScriptPath, strScriptBase + f"_{IP_NET}.lan")
         elif opt in ("-M"):
             IP_MASK = arg
 
@@ -851,7 +851,7 @@ if __name__ == "__main__":
             
     # get command line arguments
     getargs(sys.argv[1:])
-
+    
     ## delete outputfile, if exists
     if os.path.exists(outputFile):
         os.remove(outputFile)
@@ -863,7 +863,9 @@ if __name__ == "__main__":
     if file_enabled:
         file_name = outputFile.replace(".lan", ".err")
         if os.path.exists(file_name):
-            os.remove(file_name)        
+            os.remove(file_name)   
+
+            
 
     # init some vars
     addr_lst = []
@@ -952,6 +954,7 @@ if __name__ == "__main__":
     ## ---------------------------------------------------------------------------------------------------------------------------
 
     if PingList != "":
+        print(f"\n  List Ping scan using {PingList}\n")
         with open(PingList, "r") as fh:
             for line in fh:
                 Host = line.strip()
