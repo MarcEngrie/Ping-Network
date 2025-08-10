@@ -2,7 +2,7 @@
 #
 # some stuff I need sometimes
 #
-#  pyinstaller --onefile "Ping-Network.py"
+#  pyinstaller --onefile "Ping-Network.py" --exclude-module pkg_resources
 #
 ###################################################################################
 
@@ -27,10 +27,11 @@ from requests             import get
 from datetime             import datetime        as dt
 from email.mime.multipart import MIMEMultipart
 from email.mime.text      import MIMEText
+from scapy.all            import srp, Ether, ARP
 
 #----------------------------------------------------------------------------------
 
-VERSION        = "2.00"
+VERSION        = "3.00"
 Debug          = False
 
 COMPUTERNAME   = os.getenv('COMPUTERNAME')
@@ -49,7 +50,7 @@ PingDict       = {}
 Timeout        = 300
 
 print_enabled  = False
-file_enabeld   = False
+file_enabled   = False
 file_name      = ""
 
 # SMTP related
@@ -73,6 +74,7 @@ ipalive        = []
 ipnet          = []
 ipa            = []
 ipu            = []
+arpalive       = []
 
 # Output file
 outputFile     = ""
@@ -308,23 +310,23 @@ def loadPingDict():
 
     with open(PingList, "r") as fh:
         for line in fh:
-            Host = line.strip()
-            if len(Host) > 0:
-                if Host[0] != '#':
-                    if Host.find(";") != -1:
-                        ips = Host.split(";")
-                        host = ips[0].strip()
-                        ip   = ips[1].strip()
-                        act  = ips[2].strip()
+            line = line.strip()
+            if len(line) > 0:
+                if line[0] != '#':
+                    if line.find(";") != -1:
+                        ip_split = line.split(";")
+                        hostname = ip_split[0].strip()
+                        ip       = ip_split[1].strip()
+                        act      = ip_split[2].strip()
 
                         # Format last part with 3 digits, padded with zeros
-                        parts = ip.split(".")
-                        parts[0] = f"{int(parts[0]):3d}"
-                        parts[1] = f"{int(parts[1]):03d}"
-                        parts[2] = f"{int(parts[2]):03d}"
-                        parts[3] = f"{int(parts[3]):03d}"
-                        new_ip = ".".join(parts)
-                        PingDict[new_ip] = host
+                        ip_split = ip.split(".")
+                        ip_split[0] = f"{int(ip_split[0]):3d}"
+                        ip_split[1] = f"{int(ip_split[1]):03d}"
+                        ip_split[2] = f"{int(ip_split[2]):03d}"
+                        ip_split[3] = f"{int(ip_split[3]):03d}"
+                        ip_15 = ".".join(ip_split)
+                        PingDict[ip_15] = hostname
 #----------------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------------
@@ -415,11 +417,11 @@ def doping(Host, Count, Size, Timeout, Debug):
     DNS_ip   = ""
 
     if Host.find(";") != -1:
-        ips = Host.split(";")
-        host = ips[0].strip()
-        ip   = ips[1].strip()
-        act  = ips[2].strip()
-        ips.remove(host)
+        ip_split = Host.split(";")
+        host = ip_split[0].strip()
+        ip   = ip_split[1].strip()
+        act  = ip_split[2].strip()
+        ip_split.remove(host)
         host = host.replace(".home","")
         host = host.replace(".local","")
         if IP_NET in ip:
@@ -454,7 +456,7 @@ def doping(Host, Count, Size, Timeout, Debug):
                 with open(file_name , 'a') as f:
                     f.write(f"\r\n\n{msg}\n")    
 
-        if DNS_ip in ips:
+        if DNS_ip in ip_split:
             pass
         else:
             msg = "ERROR: " + ip + " not the same as DNS " + DNS_ip
@@ -469,8 +471,10 @@ def doping(Host, Count, Size, Timeout, Debug):
         if ip == '':
             ip = socket.gethostbyname(host)
 
-        if ip in ipalive:
-            ipalive.remove(ip)
+        for ipdict in ipalive:
+            if ipdict.get('ip') == ip:
+                ipalive.remove(ipdict)
+                break
 
         pinger = Pinger(target_host=ip, count=Count, size=Size, timeout=Timeout, debug=Debug)
         max, min, avg, los = pinger.ping()
@@ -494,9 +498,9 @@ def PingHost(Host):
     acti = ""
 
     if Host.find(";") != -1:
-        ips = Host.split(";")
-        host = ips[0].strip()
-        acti = ips[2].strip()
+        parts = Host.split(";")
+        host = parts[0].strip()
+        acti = parts[2].strip()
     else:
         host = Host
 
@@ -535,13 +539,16 @@ def PingHost(Host):
 #----------------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------------
-def scan_ip_range(startIP, endIP):
+def scan_net_ip(network):
 
     global ipnet, ipa, ipu
 
     ipnet.clear()
     ipa.clear()
     ipu.clear()
+
+    startIP = str(list(network.hosts())[0])
+    endIP   = str(list(network.hosts())[-1])
 
     # Convert IP addresses to integers
     start = list(map(int, startIP.split('.')))
@@ -565,39 +572,101 @@ def scan_ip_range(startIP, endIP):
 #----------------------------------------------------------------------------------
 
 #----------------------------------------------------------------------------------
+def scan_net_arp(network):
+    
+    global arpalive
+
+    try:
+        # Create an ARP request packet for the specified IP range.
+        arp_request = ARP(pdst=str(network))
+        
+        # Create an Ethernet frame to broadcast the ARP request.
+        # `dst="ff:ff:ff:ff:ff:ff"` is the broadcast MAC address.
+        broadcast_ether_frame = Ether(dst="ff:ff:ff:ff:ff:ff")
+        
+        # Combine the Ethernet and ARP packets into one.
+        # The `/` operator in Scapy layers the packets.
+        arp_request_broadcast = broadcast_ether_frame / arp_request
+        
+        # Send the packet and capture the responses.
+        # `timeout` specifies how long to wait for a response.
+        # `verbose=False` suppresses Scapy's default output.
+        answered_packets, unanswered_packets = srp(arp_request_broadcast, timeout=1, verbose=False)
+        
+        arpalive = []
+        for sent, received in answered_packets:
+            arpalive.append({'ip': received.psrc, 'mac': received.hwsrc})
+
+        if Debug:
+            for ap in arpalive:
+                print(f" {ap['ip']:<15}    {ap['mac']}")
+            else:
+                print("No devices found.") 
+            
+        return arpalive
+        
+    except ImportError:
+        print("Scapy is not installed. Please install it using 'pip install scapy'.")
+        print("Make sure you also install Npcap from https://npcap.com/#download.")
+        sys.exit(1)
+        
+    except Exception as e:
+        return []
+#----------------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------------
 def log2lan(net):
 
     global PingDict, outputFile
     global host_ip, host_mac
 
     with open(outputFile, 'a') as f:
-        l = len(ipa)
+        l = len(ipalive)
         f.write(f"###################\n")
         f.write(f"### Net: {net}\n")
         f.write(f"###################\n\n")
         f.write(f"IPs alive ({l})\n----------------\n")
-        for ip in ipa:
+        for ipdict in ipalive:
+
+            ip = ipdict['ip']
 
             # Format last part with 3 digits, padded with zeros
-            parts = ip.split(".")
-            parts[0] = f"{int(parts[0]):3d}"
-            parts[1] = f"{int(parts[1]):03d}"
-            parts[2] = f"{int(parts[2]):03d}"
-            parts[3] = f"{int(parts[3]):03d}"
-            new_ip = ".".join(parts)
+            ip_split = ip.split(".")
+            ip_split[0] = f"{int(ip_split[0]):3d}"
+            ip_split[1] = f"{int(ip_split[1]):03d}"
+            ip_split[2] = f"{int(ip_split[2]):03d}"
+            ip_split[3] = f"{int(ip_split[3]):03d}"
+            ip_15 = ".".join(ip_split)
 
             # find hostname in DNS
-            hostname = "<not in DNS>"
-            try:
-                hostname = socket.gethostbyaddr(ip)[0]
-            except socket.herror:
+            hostname = ipdict['hostname']
+            if hostname == "":
                 hostname = "<not in DNS>"
-                if new_ip in PingDict:
-                    hostname = PingDict[new_ip]
+                try:
+                    hostname = socket.gethostbyaddr(ip)[0]
+                except socket.herror:
+                    hostname = "<not in DNS>"
+                    if ip_15 in PingDict:
+                        hostname = PingDict[ip_15]
 
-            mac = ""
-            if host_ip != "":
-                if ip != host_ip:
+            
+            
+            mac = ipdict['mac']
+            if mac == "":
+                if host_ip != "":
+                    if ip != host_ip:
+                        # Run the arp command to get the MAC address
+                        arp_command = ['arp', '-a', ip]
+                        output = subprocess.check_output(arp_command).decode()
+                        # Use regex to find the MAC address in the output
+                        mac_address = re.search(r'(([a-fA-F0-9]{2}[:-]){5}[a-fA-F0-9]{2})', output)
+                        if mac_address:
+                            mac = mac_address.group(0).replace('-', ':')
+                        else:
+                            mac = ""
+                    else:
+                        mac = host_mac
+                else:
                     # Run the arp command to get the MAC address
                     arp_command = ['arp', '-a', ip]
                     output = subprocess.check_output(arp_command).decode()
@@ -607,27 +676,15 @@ def log2lan(net):
                         mac = mac_address.group(0).replace('-', ':')
                     else:
                         mac = ""
-                else:
-                    mac = host_mac
-            else:
-                # Run the arp command to get the MAC address
-                arp_command = ['arp', '-a', ip]
-                output = subprocess.check_output(arp_command).decode()
-                # Use regex to find the MAC address in the output
-                mac_address = re.search(r'(([a-fA-F0-9]{2}[:-]){5}[a-fA-F0-9]{2})', output)
-                if mac_address:
-                    mac = mac_address.group(0).replace('-', ':')
-                else:
-                    mac = ""
 
             if hostname != "" and mac != "":
-                line = f"{new_ip:<15} - {hostname:<40}  {mac}"
+                line = f"{ip_15:<15} - {hostname:<40}  {mac}"
             elif hostname != "" and mac == "":
-                line = f"{new_ip:<15} - {hostname:<40} !!! >> PROBLEM << !!! "
+                line = f"{ip_15:<15} - {hostname:<40}"
             elif hostname == "" and mac != "":
-                line = f"{new_ip:<15} - {hostname:<40}  {mac}"
+                line = f"{ip_15:<15} - {hostname:<40}  {mac}"
             else:
-                line = f"{new_ip:<15} - {hostname:<40}  [??:??:??:??:??:??]"
+                line = f"{ip_15:<15} - {hostname:<40}  [??:??:??:??:??:??]"
 
             f.write(f"{line}\n")
 
@@ -637,18 +694,18 @@ def log2lan(net):
         # f.write(f"\n\nIPs unused ({l})\n----------------\n")
         for ip in ipu:
             # Format last part with 3 digits, padded with zeros
-            parts = ip.split(".")
-            parts[0] = f"{int(parts[0]):3d}"
-            parts[1] = f"{int(parts[1]):03d}"
-            parts[2] = f"{int(parts[2]):03d}"
-            parts[3] = f"{int(parts[3]):03d}"
-            new_ip = ".".join(parts)
+            ip_split = ip.split(".")
+            ip_split[0] = f"{int(ip_split[0]):3d}"
+            ip_split[1] = f"{int(ip_split[1]):03d}"
+            ip_split[2] = f"{int(ip_split[2]):03d}"
+            ip_split[3] = f"{int(ip_split[3]):03d}"
+            ip_15 = ".".join(ip_split)
             hostname = ""
-            if new_ip in PingDict:
-                hostname = PingDict[new_ip]
-                line = f"{new_ip:<15} - {hostname:<39}  !!!! NOT ALIVE !!!!"
+            if ip_15 in PingDict:
+                hostname = PingDict[ip_15]
+                line = f"{ip_15:<15} - {hostname:<39}  !!!! NOT ALIVE !!!!"
             else:
-                line = f"{new_ip:<15}"
+                line = f"{ip_15:<15}"
             ipnet.append(line)
             # f.write(f"{line}\n")
         # f.write(f"\n\n")
@@ -773,7 +830,7 @@ if __name__ == "__main__":
     # Accessing values
     print_enabled = config['PRINT']['Enabled']
     smtp_enabled  = config['SMTP']['Enabled']
-    file_enabeld  = config['FILE']['Enabled']
+    file_enabled  = config['FILE']['Enabled']
 
     if smtp_enabled:
         smtp_config = config['SMTP']
@@ -799,7 +856,7 @@ if __name__ == "__main__":
         if os.path.exists(outputFile.replace(".lan", ".txt")):
             os.remove(outputFile.replace(".lan", ".txt"))        
 
-    if file_enabeld:
+    if file_enabled:
         file_name = outputFile.replace(".lan", ".err")
         if os.path.exists(file_name):
             os.remove(file_name)        
@@ -853,9 +910,36 @@ if __name__ == "__main__":
 
     print(f"      Scanning from {startIP} to {endIP}")
 
-    scan_ip_range(startIP, endIP)
+    scan_net_ip(network)
+    
+    for ip in ipa:
+        ipalive.append({'ip': ip, 'hostname': '', 'mac': ''})
+        
+    # only do arp scan if within same segement = non-routed 
+    if host_net:
+        scan_net_arp(network)
+        
+        # Iterate through ipalive and update mac if ip matches
+        if len(arpalive) > 0:
+            for ipdict in ipalive:
+                ip_val = ipdict['ip']
+                for apdict in arpalive:
+                    if apdict['ip'] == ip_val:
+                        ipdict['mac'] = apdict['mac']
+                        arpalive.remove(apdict)
+                        break
 
-    ipalive.extend(ipa)
+        if Debug:
+            print("Updated ipalive:")
+            print(ipalive)
+
+            print("Remaining arpa:")
+            print(arpa)
+
+        for apdict in arpalive:
+            ip  = apdict['ip']
+            mac = apdict['mac']
+            ipalive.append({'ip': ip, 'hostname': '', 'mac': mac})
 
     log2lan(IP_NET)
 
@@ -875,26 +959,28 @@ if __name__ == "__main__":
     else:
         log2txt(IP_NET)
 
-    ## ---------------------------------------------------------------------------------------------------------------------------
-    ## did we forget hosts;ips???
-    ## ---------------------------------------------------------------------------------------------------------------------------
+    # ## ---------------------------------------------------------------------------------------------------------------------------
+    # ## did we forget hosts;ips???
+    # ## ---------------------------------------------------------------------------------------------------------------------------
 
     if len(ipalive) > 0 and PingList != "":
         body = ""
-        for ip in ipalive:
+        for ipdict in ipalive:
+            ip       = ipdict['ip']
+            hostname = ipdict['hostname']
+            mac      = ipdict['mac']
+
             MAC_host, DNS_host = get_mac_address_and_hostname(ip)
+            
+            if hostname == "":
+                if DNS_host:
+                    hostname = DNS_host.replace(".home","").lower()
 
-            if DNS_host:
-                DNS_host = DNS_host.replace(".home","").lower()
-            else:
-                DNS_host = ""
+            if mac == "":
+                if MAC_host:
+                    mac = MAC_host.upper()
 
-            if MAC_host:
-                MAC_host = MAC_host.upper()
-            else:
-                MAC_host = ""
-
-            body = body + "IP address: {0:} - Hostname: {1:} - MAC address: {2:}\n".format(ip.ljust(16), DNS_host.ljust(20), MAC_host.ljust(16))
+            body = body + "IP address: {0:} - Hostname: {1:} - MAC address: {2:}\n".format(ip.ljust(16), hostname.ljust(20), mac.ljust(16))
 
         msg = "Not listed active IPs\n"
         if smtp_enabled:
@@ -908,4 +994,5 @@ if __name__ == "__main__":
                 f.write(f"\r\n\n    {msg}\n")
                 for line in body.split("\n"):
                     f.write(f"      {line}")
+                    
     sys.exit(0)
